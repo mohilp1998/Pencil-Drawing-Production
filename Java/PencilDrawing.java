@@ -5,6 +5,12 @@ import java.io.*;
 
 import javax.imageio.ImageIO;
 
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.highgui.HighGui;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+
 public class PencilDrawing {
     
     BufferedImage image;
@@ -22,6 +28,12 @@ public class PencilDrawing {
         myDrawing.readImage("testImage-1.jpg");
         myDrawing.convertToGrayScale();
         myDrawing.outputImage("GrayScale.jpg");
+        System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
+        Mat src = Imgcodecs.imread("GrayScale.jpg");
+        Mat dst = new Mat();
+        Imgproc.Sobel(src, dst, -1, 0, 1);
+        HighGui.imshow("Sobel - x:1 & y:0 ", dst);
+        HighGui.waitKey();
     }
     
     public void readImage(String inputPath) {
