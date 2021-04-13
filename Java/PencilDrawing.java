@@ -1,50 +1,54 @@
-import java.awt.*;
-import java.awt.image.BufferedImage;
-
-import java.io.*;
-
-import javax.imageio.ImageIO;
-
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.*;
+
 public class PencilDrawing {
-    
-    BufferedImage image;
+   
+    // For logging
+    LogManager lgmngr = LogManager.getLogManager();
+    Logger log = lgmngr.getLogger(Logger.GLOBAL_LOGGER_NAME);
+
+    // For Image processing
+    Mat image;
     int width;
     int height;
 
     public PencilDrawing() {
-        // Constructor for the class
-        System.out.println("Fn:PencilDrawing()::Welcome to Pencil Drawing generator!!");
+        // Setting Log Level - Please Update as required for messages
+        try {
+            log.setLevel(Level.INFO);
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Exception: " + e.getMessage());
+        }
+
+        log.log(Level.INFO, "Welcome to Pencil Drawing generator!!");
+        // Loading the opencv library
+        System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
     }
 
     public static void main(String[] args) {
-        // Prints "Hello, World" to the terminal window.
         PencilDrawing myDrawing = new PencilDrawing();
         myDrawing.readImage("testImage-1.jpg");
         myDrawing.convertToGrayScale();
+        myDrawing.displayImage();
         myDrawing.outputImage("GrayScale.jpg");
-        System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
-        Mat src = Imgcodecs.imread("GrayScale.jpg");
-        Mat dst = new Mat();
-        Imgproc.Sobel(src, dst, -1, 0, 1);
-        HighGui.imshow("Sobel - x:1 & y:0 ", dst);
-        HighGui.waitKey();
     }
     
     public void readImage(String inputPath) {
-        System.out.println("Fn:readImage()::Reading Image from Path " + inputPath);
+        log.log(Level.INFO, "Reading Image from Path " + inputPath);
         try {
-            File input = new File(inputPath);
-            this.image = ImageIO.read(input);
-            this.width = image.getWidth(); 
-            this.height = image.getHeight();
+            this.image = Imgcodecs.imread(inputPath);
+            this.width = image.width(); 
+            this.height = image.height();
         } catch (Exception e) {
-            System.err.println("Fn:readImage()::Exception: " + e.getMessage());
+            log.log(Level.SEVERE, "Exception: " + e.getMessage());
         }
     }
 
@@ -52,32 +56,32 @@ public class PencilDrawing {
         // While doing gray scale conversion we use
         // color = 0.299R + 0.587G + 0.114B because this are scaled
         // according to human perception/wavelength of the color
-        System.out.println("Fn:convertToGrayScale()::Converting Image to grayscale version");
+        log.log(Level.INFO, "Converting Image to grayscale version");
         try {
-            for (int i = 0; i < this.width; i++) {
-                for (int j = 0; j < this.height; j++) {
-                    Color c = new Color(this.image.getRGB(i, j));
-                    int red = (int)(c.getRed() * 0.299);
-                    int green = (int)(c.getGreen() * 0.587);
-                    int blue = (int)(c.getBlue() * 0.114);
-                    
-                    Color grayScale = new Color(red+green+blue, red+green+blue, red+green+blue);
-
-                    this.image.setRGB(i, j, grayScale.getRGB());
-                }
-            }
+            Mat grey = new Mat();
+            Imgproc.cvtColor(this.image, grey, Imgproc.COLOR_BGR2GRAY);
+            this.image = grey;
         } catch (Exception e) {
-            System.err.println("Fn:convertToGrayScale()::Exception: " + e.getMessage());
+            log.log(Level.SEVERE, "Exception: " + e.getMessage());
         }
     }
 
     public void outputImage(String outPath) {
-        System.out.println("Fn:outputImage()::Outputting the image to path " + outPath);
+        log.log(Level.INFO, "Outputting the image to path " + outPath);
         try {
-            File output = new File(outPath);
-            ImageIO.write(this.image, "jpg", output);
+            Imgcodecs.imwrite(outPath, this.image);
         } catch (Exception e) {
-            System.err.println("Fn:outputImage()::Exception: " + e.getMessage());
+            log.log(Level.SEVERE, "Exception: " + e.getMessage());
         }
+    }
+
+    public void displayImage() {
+        log.log(Level.INFO, "Displaying the current image in GUI");
+        try {
+            HighGui.imshow("image", this.image);
+            HighGui.waitKey();
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Exception: " + e.getMessage());
+        } 
     }
 }
