@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.*;
+import java.lang.Math;
 
 public class PencilDrawing {
    
@@ -20,6 +21,7 @@ public class PencilDrawing {
     // For Image processing
     Mat imgColor;
     Mat imgGray;
+    Mat imgGradient;
     int width;
     int height;
 
@@ -45,7 +47,8 @@ public class PencilDrawing {
         myDrawing.readImage("testImage-1.jpg");
         myDrawing.convertToGrayScale();
         myDrawing.gradientImage();
-        myDrawing.displayImage(myDrawing.imgGray);
+        myDrawing.generateCi();
+        myDrawing.displayImage(myDrawing.imgGradient);
         myDrawing.outputImage("GrayScale.jpg", myDrawing.imgGray);
     }
 
@@ -56,22 +59,6 @@ public class PencilDrawing {
             this.imgColor.convertTo(this.imgColor, CvType.CV_32F);
             this.width = imgColor.width(); 
             this.height = imgColor.height();
-        } catch (Exception e) {
-            log.log(Level.SEVERE, "Exception: " + e.getMessage());
-        }
-    }
-
-    public void convertToGrayScale() {
-        // While doing gray scale conversion we use
-        // color = 0.299R + 0.587G + 0.114B because this are scaled
-        // according to human perception/wavelength of the color
-        log.log(Level.INFO, "Converting Image to grayscale version");
-        try {
-            Mat gray = new Mat();
-            Imgproc.cvtColor(this.imgColor, gray, Imgproc.COLOR_BGR2GRAY);
-            Imgcodecs.imwrite("gray.jpg", gray);
-            this.imgGray = Imgcodecs.imread("gray.jpg", Imgcodecs.IMREAD_GRAYSCALE);
-            this.imgGray.convertTo(this.imgGray, CvType.CV_32F);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Exception: " + e.getMessage());
         }
@@ -100,6 +87,22 @@ public class PencilDrawing {
         } 
     }
 
+    public void convertToGrayScale() {
+        // While doing gray scale conversion we use
+        // color = 0.299R + 0.587G + 0.114B because this are scaled
+        // according to human perception/wavelength of the color
+        log.log(Level.INFO, "Converting Image to grayscale version");
+        try {
+            Mat gray = new Mat();
+            Imgproc.cvtColor(this.imgColor, gray, Imgproc.COLOR_BGR2GRAY);
+            Imgcodecs.imwrite("gray.jpg", gray);
+            this.imgGray = Imgcodecs.imread("gray.jpg", Imgcodecs.IMREAD_GRAYSCALE);
+            this.imgGray.convertTo(this.imgGray, CvType.CV_32F);
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Exception: " + e.getMessage());
+        }
+    }
+
     public void gradientImage() {
         Mat grad_x = new Mat(); 
         Mat grad_y = new Mat();
@@ -111,7 +114,57 @@ public class PencilDrawing {
         Core.pow(grad_x, 2, grad_x);
         Core.pow(grad_y, 2, grad_y);
         Core.add(grad_x, grad_y, grad);
-        Core.sqrt(grad, this.imgGray);
+        this.imgGradient = new Mat();
+        Core.sqrt(grad, this.imgGradient);
+        this.imgGradient.convertTo(this.imgGradient, CvType.CV_32F);
+        Core.normalize(this.imgGradient, this.imgGradient, 0.0, 255.0, Core.NORM_MINMAX);
+        log.log(Level.INFO, "Gradient Image Created");
+    }
+
+    public void generateCi() {
+        // First we will generate 4 Li - For now only using 4 directions only
+        int size = Math.max(this.imgColor.width(), this.imgColor.height())/30;
+        size = size + (size % 2) + 1;
+        double intensity = 10;
+        
+        Mat Li0 = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        Li0.row(size/2).setTo(new Scalar(intensity));
+        
+        Mat Li90 = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        Li90.col(size/2).setTo(new Scalar(intensity));
+        
+        Mat Li135 = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        for (int i = 0; i < Li135.width(); i++) {
+            for (int j = 0; j < Li135.height(); j++) {
+                if(i == j){
+                    double [] data = {intensity};
+                    updatePixelVal(i, j, data, Li135);
+                }
+            }
+        }
+
+        Mat Li45 = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        for (int i = 0; i < Li45.width(); i++) {
+            for (int j = 0; j < Li45.height(); j++) {
+                if ( (i+j+1) == size ){
+                    double [] data = {intensity};
+                    updatePixelVal(i, j, data, Li45);
+                }
+            }
+        }
+
+        // Generating Gis corresponding to Lis
+        Mat Gi0 = new Mat();
+        Imgproc.filter2D(imgGradient, Gi0, CvType.CV_32F, Li0);
+        Core.normalize(Gi0, Gi0, 0, 255, Core.NORM_MINMAX);
+        // for (int i = 0; i < Gi0.height(); i++) {
+        //     for (int j = 0; j < Gi0.width(); j++) {
+        //         System.out.print(getPixelValue(i, j, Gi0)[0]);
+        //         System.out.print(" ");
+        //     }
+        //     System.out.println(" ");
+        // }
+        // displayImage(Gi0);
     }
 
     public double [] getPixelValue(int row, int col, Mat img) {
