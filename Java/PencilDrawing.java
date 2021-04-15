@@ -20,13 +20,14 @@ public class PencilDrawing {
 
     // For Image processing
     Mat imgColor;
-    Mat imgGray;
-    Mat imgGradient;
     int width;
     int height;
 
-    Mat [] Ci = new Mat[4]; // degree-> index: 0 -> 0, 45 -> 1, 90 -> 2, 135 -> 3
+    // Variables for Line Drawing with Strokes
+    Mat imgGray;
+    Mat imgGradient;
     Mat [] Li = new Mat[4]; // degree-> index: 0 -> 0, 45 -> 1, 90 -> 2, 135 -> 3
+    Mat [] Ci = new Mat[4]; // degree-> index: 0 -> 0, 45 -> 1, 90 -> 2, 135 -> 3
 
     public PencilDrawing() {
         // Setting Log Level - Please Update as required for messages
@@ -52,6 +53,8 @@ public class PencilDrawing {
         gradientImage();
         generateCi();
         displayImage(Ci[1]);
+
+
         // outputImage("GrayScale.jpg", this.imgGray);
     }
 
