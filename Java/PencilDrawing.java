@@ -26,8 +26,8 @@ public class PencilDrawing {
     // Variables for Line Drawing with Strokes
     Mat imgGray;
     Mat imgGradient;
-    Mat [] Li = new Mat[4]; // degree-> index: 0 -> 0, 45 -> 1, 90 -> 2, 135 -> 3
-    Mat [] Ci = new Mat[4]; // degree-> index: 0 -> 0, 45 -> 1, 90 -> 2, 135 -> 3
+    Mat [] Li = new Mat[6]; //degree->index: 0->0, 45->1, 90->2, 135->3, ~60->4, ~120->5
+    Mat [] Ci = new Mat[6]; //degree->index: 0->0, 45->1, 90->2, 135->3, ~60->4, ~120->5
     Mat imgLine;
 
     public PencilDrawing() {
@@ -55,17 +55,17 @@ public class PencilDrawing {
         generateCi();
 
         // Generating Line Drawing with strokes image
-        imgLine = new Mat();
-        Mat [] convLiCi = new Mat[4];
+        imgLine = new Mat(Ci[0].rows(), Ci[0].cols(), CvType.CV_32FC1, new Scalar(0));
+        Mat [] convLiCi = new Mat[6];
         for (int i = 0; i < convLiCi.length; i++) {
             convLiCi[i] = new Mat();
             Imgproc.filter2D(Ci[i], convLiCi[i], CvType.CV_32F, Li[i]);
             Core.normalize(convLiCi[i], convLiCi[i], 0, 255, Core.NORM_MINMAX);
         }
 
-        Core.add(convLiCi[0], convLiCi[1], imgLine);
-        Core.add(imgLine, convLiCi[2],imgLine);
-        Core.add(imgLine, convLiCi[3], imgLine);
+        for (int i = 0; i < convLiCi.length; i++) {
+            Core.add(imgLine, convLiCi[i], imgLine);
+        }
         Core.normalize(imgLine, imgLine, 0, 255, Core.NORM_MINMAX);
 
         // Inverting the imgLine image
@@ -79,7 +79,7 @@ public class PencilDrawing {
                 updatePixelVal(i, j, data, imgLine);
             }
         }
-        
+
         displayImage(imgLine);
         // outputImage("GrayScale.jpg", this.imgGray);
     }
@@ -185,8 +185,40 @@ public class PencilDrawing {
             }
         }
 
+        Li[4] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        int Li4sum = (Li[4].rows() - (Li[4].rows()/4));
+        for (int i = 0; i < Li[4].rows(); i++) {
+            for (int j = 0; j < Li[4].cols(); j++) {
+                if ((i % 2) == 0) {
+                    if ((i + j) == Li4sum) {
+                        double [] data = {intensity+230};
+                        updatePixelVal(i, j, data, Li[4]);
+                    }
+                }
+            }
+            if ( (i % 2) == 0){
+                Li4sum = Li4sum + 1;
+            }
+        }
+
+        Li[5] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        int Li5sum = (Li[5].rows()/4);
+        for (int i = 0; i < Li[5].rows(); i++) {
+            for (int j = 0; j < Li[5].cols(); j++) {
+                if ((i % 2) == 0) {
+                    if ((i + j) == Li5sum) {
+                        double [] data = {intensity+230};
+                        updatePixelVal(i, j, data, Li[5]);
+                    }
+                }
+            }
+            if ( (i % 2) == 0){
+                Li5sum = Li5sum + 3;
+            }
+        }
+
         // Generating Gis corresponding to Lis
-        Mat [] Gi = new Mat[4];
+        Mat [] Gi = new Mat[6];
 
         for (int i = 0; i < Gi.length; i++) {
             Gi[i] = new Mat();
@@ -202,11 +234,10 @@ public class PencilDrawing {
         for (int i = 0; i < this.imgGradient.rows(); i++) {
             for (int j = 0; j < this.imgGradient.cols(); j++) {
                 // Step 1: Get all Gi and G pixel values
-                double [] Gi_data = new double[4];
-                Gi_data[0] = getPixelValue(i, j, Gi[0])[0];
-                Gi_data[1] = getPixelValue(i, j, Gi[1])[0];
-                Gi_data[2] = getPixelValue(i, j, Gi[2])[0];
-                Gi_data[3] = getPixelValue(i, j, Gi[3])[0];
+                double [] Gi_data = new double[Ci.length];
+                for (int k = 0; k < Gi_data.length; k++) {
+                    Gi_data[k] = getPixelValue(i, j, Gi[k])[0];
+                }
 
                 double G_data = getPixelValue(i, j, this.imgGradient)[0];
                 // Step 2: Calculate max of Gi_data
