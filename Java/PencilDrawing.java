@@ -28,6 +28,7 @@ public class PencilDrawing {
     Mat imgGradient;
     Mat [] Li = new Mat[4]; // degree-> index: 0 -> 0, 45 -> 1, 90 -> 2, 135 -> 3
     Mat [] Ci = new Mat[4]; // degree-> index: 0 -> 0, 45 -> 1, 90 -> 2, 135 -> 3
+    Mat imgLine;
 
     public PencilDrawing() {
         // Setting Log Level - Please Update as required for messages
@@ -52,9 +53,34 @@ public class PencilDrawing {
         convertToGrayScale();
         gradientImage();
         generateCi();
-        displayImage(Ci[1]);
 
+        // Generating Line Drawing with strokes image
+        imgLine = new Mat();
+        Mat [] convLiCi = new Mat[4];
+        for (int i = 0; i < convLiCi.length; i++) {
+            convLiCi[i] = new Mat();
+            Imgproc.filter2D(Ci[i], convLiCi[i], CvType.CV_32F, Li[i]);
+            Core.normalize(convLiCi[i], convLiCi[i], 0, 255, Core.NORM_MINMAX);
+        }
 
+        Core.add(convLiCi[0], convLiCi[1], imgLine);
+        Core.add(imgLine, convLiCi[2],imgLine);
+        Core.add(imgLine, convLiCi[3], imgLine);
+        Core.normalize(imgLine, imgLine, 0, 255, Core.NORM_MINMAX);
+
+        // Inverting the imgLine image
+        for (int i = 0; i < imgLine.rows(); i++) {
+            for (int j = 0; j < imgLine.cols(); j++) {
+                double [] data;
+                data = getPixelValue(i, j, imgLine);
+                for (int k = 0; k < data.length; k++) {
+                    data[k] = (255 - data[k]);
+                }
+                updatePixelVal(i, j, data, imgLine);
+            }
+        }
+        
+        displayImage(imgLine);
         // outputImage("GrayScale.jpg", this.imgGray);
     }
 
@@ -162,27 +188,16 @@ public class PencilDrawing {
         // Generating Gis corresponding to Lis
         Mat [] Gi = new Mat[4];
 
-        Gi[0] = new Mat();
-        Imgproc.filter2D(this.imgGradient, Gi[0], CvType.CV_32F, Li[0]);
-        Core.normalize(Gi[0], Gi[0], 0, 255, Core.NORM_MINMAX);
-
-        Gi[1] = new Mat();
-        Imgproc.filter2D(this.imgGradient, Gi[1], CvType.CV_32F, Li[1]);
-        Core.normalize(Gi[1], Gi[1], 0, 255, Core.NORM_MINMAX);
-
-        Gi[2] = new Mat();
-        Imgproc.filter2D(this.imgGradient, Gi[2], CvType.CV_32F, Li[2]);
-        Core.normalize(Gi[2], Gi[2], 0, 255, Core.NORM_MINMAX);
-
-        Gi[3] = new Mat();
-        Imgproc.filter2D(this.imgGradient, Gi[3], CvType.CV_32F, Li[3]);
-        Core.normalize(Gi[3], Gi[3], 0, 255, Core.NORM_MINMAX);
+        for (int i = 0; i < Gi.length; i++) {
+            Gi[i] = new Mat();
+            Imgproc.filter2D(this.imgGradient, Gi[i], CvType.CV_32F, Li[i]);
+            Core.normalize(Gi[i], Gi[i], 0, 255, Core.NORM_MINMAX);
+        }
 
         // Generating Cis
-        Ci[0] = new Mat(this.imgGradient.rows(), this.imgGradient.cols(), CvType.CV_32F, new Scalar(0));
-        Ci[1] = new Mat(this.imgGradient.rows(), this.imgGradient.cols(), CvType.CV_32F, new Scalar(0));
-        Ci[2] = new Mat(this.imgGradient.rows(), this.imgGradient.cols(), CvType.CV_32F, new Scalar(0));
-        Ci[3] = new Mat(this.imgGradient.rows(), this.imgGradient.cols(), CvType.CV_32F, new Scalar(0));
+        for (int i = 0; i < Ci.length; i++) {
+            Ci[i] = new Mat(this.imgGradient.rows(), this.imgGradient.cols(), CvType.CV_32F, new Scalar(0));
+        }
 
         for (int i = 0; i < this.imgGradient.rows(); i++) {
             for (int j = 0; j < this.imgGradient.cols(); j++) {
