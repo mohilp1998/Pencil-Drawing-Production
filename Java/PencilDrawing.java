@@ -25,6 +25,9 @@ public class PencilDrawing {
     int width;
     int height;
 
+    Mat [] Ci = new Mat[4]; // degree-> index: 0 -> 0, 45 -> 1, 90 -> 2, 135 -> 3
+    Mat [] Li = new Mat[4]; // degree-> index: 0 -> 0, 45 -> 1, 90 -> 2, 135 -> 3
+
     public PencilDrawing() {
         // Setting Log Level - Please Update as required for messages
         try {
@@ -40,16 +43,16 @@ public class PencilDrawing {
 
     public static void main(String[] args) {
         PencilDrawing myDrawing = new PencilDrawing();
-        lineDrawingWithStrokes(myDrawing);
+        myDrawing.lineDrawingWithStrokes();
     }
     
-    public static void lineDrawingWithStrokes(PencilDrawing myDrawing) {
-        myDrawing.readImage("testImage-1.jpg");
-        myDrawing.convertToGrayScale();
-        myDrawing.gradientImage();
-        myDrawing.generateCi();
-        myDrawing.displayImage(myDrawing.imgGradient);
-        myDrawing.outputImage("GrayScale.jpg", myDrawing.imgGray);
+    public void lineDrawingWithStrokes() {
+        readImage("testImage-1.jpg");
+        convertToGrayScale();
+        gradientImage();
+        generateCi();
+        displayImage(Ci[1]);
+        // outputImage("GrayScale.jpg", this.imgGray);
     }
 
     public void readImage(String inputPath) {
@@ -126,45 +129,88 @@ public class PencilDrawing {
         int size = Math.max(this.imgColor.width(), this.imgColor.height())/30;
         size = size + (size % 2) + 1;
         double intensity = 10;
-        
-        Mat Li0 = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
-        Li0.row(size/2).setTo(new Scalar(intensity));
-        
-        Mat Li90 = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
-        Li90.col(size/2).setTo(new Scalar(intensity));
-        
-        Mat Li135 = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
-        for (int i = 0; i < Li135.width(); i++) {
-            for (int j = 0; j < Li135.height(); j++) {
-                if(i == j){
+
+        Li[0] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        Li[0].row(size/2).setTo(new Scalar(intensity));
+
+        Li[1] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        for (int i = 0; i < Li[1].width(); i++) {
+            for (int j = 0; j < Li[1].height(); j++) {
+                if ( (i+j+1) == size ){
                     double [] data = {intensity};
-                    updatePixelVal(i, j, data, Li135);
+                    updatePixelVal(i, j, data, Li[1]);
                 }
             }
         }
-
-        Mat Li45 = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
-        for (int i = 0; i < Li45.width(); i++) {
-            for (int j = 0; j < Li45.height(); j++) {
-                if ( (i+j+1) == size ){
+        
+        Li[2] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        Li[2].col(size/2).setTo(new Scalar(intensity));
+        
+        Li[3] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        for (int i = 0; i < Li[3].width(); i++) {
+            for (int j = 0; j < Li[3].height(); j++) {
+                if(i == j){
                     double [] data = {intensity};
-                    updatePixelVal(i, j, data, Li45);
+                    updatePixelVal(i, j, data, Li[3]);
                 }
             }
         }
 
         // Generating Gis corresponding to Lis
-        Mat Gi0 = new Mat();
-        Imgproc.filter2D(imgGradient, Gi0, CvType.CV_32F, Li0);
-        Core.normalize(Gi0, Gi0, 0, 255, Core.NORM_MINMAX);
-        // for (int i = 0; i < Gi0.height(); i++) {
-        //     for (int j = 0; j < Gi0.width(); j++) {
-        //         System.out.print(getPixelValue(i, j, Gi0)[0]);
-        //         System.out.print(" ");
-        //     }
-        //     System.out.println(" ");
-        // }
-        // displayImage(Gi0);
+        Mat [] Gi = new Mat[4];
+
+        Gi[0] = new Mat();
+        Imgproc.filter2D(this.imgGradient, Gi[0], CvType.CV_32F, Li[0]);
+        Core.normalize(Gi[0], Gi[0], 0, 255, Core.NORM_MINMAX);
+
+        Gi[1] = new Mat();
+        Imgproc.filter2D(this.imgGradient, Gi[1], CvType.CV_32F, Li[1]);
+        Core.normalize(Gi[1], Gi[1], 0, 255, Core.NORM_MINMAX);
+
+        Gi[2] = new Mat();
+        Imgproc.filter2D(this.imgGradient, Gi[2], CvType.CV_32F, Li[2]);
+        Core.normalize(Gi[2], Gi[2], 0, 255, Core.NORM_MINMAX);
+
+        Gi[3] = new Mat();
+        Imgproc.filter2D(this.imgGradient, Gi[3], CvType.CV_32F, Li[3]);
+        Core.normalize(Gi[3], Gi[3], 0, 255, Core.NORM_MINMAX);
+
+        // Generating Cis
+        Ci[0] = new Mat(this.imgGradient.rows(), this.imgGradient.cols(), CvType.CV_32F, new Scalar(0));
+        Ci[1] = new Mat(this.imgGradient.rows(), this.imgGradient.cols(), CvType.CV_32F, new Scalar(0));
+        Ci[2] = new Mat(this.imgGradient.rows(), this.imgGradient.cols(), CvType.CV_32F, new Scalar(0));
+        Ci[3] = new Mat(this.imgGradient.rows(), this.imgGradient.cols(), CvType.CV_32F, new Scalar(0));
+
+        for (int i = 0; i < this.imgGradient.rows(); i++) {
+            for (int j = 0; j < this.imgGradient.cols(); j++) {
+                // Step 1: Get all Gi and G pixel values
+                double [] Gi_data = new double[4];
+                Gi_data[0] = getPixelValue(i, j, Gi[0])[0];
+                Gi_data[1] = getPixelValue(i, j, Gi[1])[0];
+                Gi_data[2] = getPixelValue(i, j, Gi[2])[0];
+                Gi_data[3] = getPixelValue(i, j, Gi[3])[0];
+
+                double G_data = getPixelValue(i, j, this.imgGradient)[0];
+                // Step 2: Calculate max of Gi_data
+                double max = -1;
+                for (int k = 0; k < Gi_data.length; k++) {
+                    max = Math.max(max, Gi_data[k]);
+                }
+
+                // Step 3: Loop through Gi_data & if Max == Gi_data[i]. Set Ci[i] = G_data
+                for (int k = 0; k < Gi_data.length; k++) {
+                    double [] data = new double[1];
+                    if (Gi_data[k] == max) {
+                        data[0] = G_data;
+                        updatePixelVal(i, j, data, Ci[k]);
+                    }
+                    else {
+                        data[0] = 0;
+                        updatePixelVal(i, j, data, Ci[k]);
+                    }
+                }
+            }
+        }
     }
 
     public double [] getPixelValue(int row, int col, Mat img) {
