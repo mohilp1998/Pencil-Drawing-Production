@@ -1,5 +1,6 @@
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -26,8 +27,9 @@ public class PencilDrawing {
     // Variables for Line Drawing with Strokes
     Mat imgGray;
     Mat imgGradient;
-    Mat [] Li = new Mat[6]; //degree->index: 0->0, 45->1, 90->2, 135->3, ~60->4, ~120->5
-    Mat [] Ci = new Mat[6]; //degree->index: 0->0, 45->1, 90->2, 135->3, ~60->4, ~120->5
+    int numDirections = 8;
+    Mat [] Li = new Mat[numDirections]; //degree->index: 0->0, 45->1, 90->2, 135->3, ~60->4, ~120->5
+    Mat [] Ci = new Mat[numDirections]; //degree->index: 0->0, 45->1, 90->2, 135->3, ~60->4, ~120->5
     Mat imgLine;
 
     public PencilDrawing() {
@@ -56,7 +58,7 @@ public class PencilDrawing {
 
         // Generating Line Drawing with strokes image
         imgLine = new Mat(Ci[0].rows(), Ci[0].cols(), CvType.CV_32FC1, new Scalar(0));
-        Mat [] convLiCi = new Mat[6];
+        Mat [] convLiCi = new Mat[numDirections];
         for (int i = 0; i < convLiCi.length; i++) {
             convLiCi[i] = new Mat();
             Imgproc.filter2D(Ci[i], convLiCi[i], CvType.CV_32F, Li[i]);
@@ -159,66 +161,18 @@ public class PencilDrawing {
         size = size + (size % 2) + 1;
         double intensity = 10;
 
-        Li[0] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
-        Li[0].row(size/2).setTo(new Scalar(intensity));
+        Point center = new Point(size/2.0, size/2.0);
+        Mat src = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
+        src.row(size/2).setTo(new Scalar(intensity));
 
-        Li[1] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
-        for (int i = 0; i < Li[1].width(); i++) {
-            for (int j = 0; j < Li[1].height(); j++) {
-                if ( (i+j+1) == size ){
-                    double [] data = {intensity};
-                    updatePixelVal(i, j, data, Li[1]);
-                }
-            }
-        }
-        
-        Li[2] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
-        Li[2].col(size/2).setTo(new Scalar(intensity));
-        
-        Li[3] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
-        for (int i = 0; i < Li[3].width(); i++) {
-            for (int j = 0; j < Li[3].height(); j++) {
-                if(i == j){
-                    double [] data = {intensity};
-                    updatePixelVal(i, j, data, Li[3]);
-                }
-            }
-        }
-
-        Li[4] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
-        int Li4sum = (Li[4].rows() - (Li[4].rows()/4));
-        for (int i = 0; i < Li[4].rows(); i++) {
-            for (int j = 0; j < Li[4].cols(); j++) {
-                if ((i % 2) == 0) {
-                    if ((i + j) == Li4sum) {
-                        double [] data = {intensity+230};
-                        updatePixelVal(i, j, data, Li[4]);
-                    }
-                }
-            }
-            if ( (i % 2) == 0){
-                Li4sum = Li4sum + 1;
-            }
-        }
-
-        Li[5] = new Mat(size, size, CvType.CV_32FC1, new Scalar(0));
-        int Li5sum = (Li[5].rows()/4);
-        for (int i = 0; i < Li[5].rows(); i++) {
-            for (int j = 0; j < Li[5].cols(); j++) {
-                if ((i % 2) == 0) {
-                    if ((i + j) == Li5sum) {
-                        double [] data = {intensity+230};
-                        updatePixelVal(i, j, data, Li[5]);
-                    }
-                }
-            }
-            if ( (i % 2) == 0){
-                Li5sum = Li5sum + 3;
-            }
+        for (int i = 0; i < Li.length; i++) {
+            Mat rotMat = Imgproc.getRotationMatrix2D(center, i*(180.0/numDirections), 1.0);
+            Li[i] = new Mat();
+            Imgproc.warpAffine(src, Li[i], rotMat, src.size(), Imgproc.INTER_CUBIC);
         }
 
         // Generating Gis corresponding to Lis
-        Mat [] Gi = new Mat[6];
+        Mat [] Gi = new Mat[numDirections];
 
         for (int i = 0; i < Gi.length; i++) {
             Gi[i] = new Mat();
