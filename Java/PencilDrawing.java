@@ -255,7 +255,7 @@ public class PencilDrawing {
         getParametricCDF();
         doHistogramEqualization();
         // Step 3: Calculate beta matrix for pencil texture
-
+        pencilTextureRendering();
         // Step 4: Generate texture image
 
     }
@@ -335,6 +335,7 @@ public class PencilDrawing {
     }
 
     void doHistogramEqualization() {
+        log.log(Level.INFO, "Histogram Equalization");
         imgEqualized = new Mat(imgY.rows(), imgY.cols(), CvType.CV_8UC1);
         for (int i = 0; i < imgY.rows(); i++) {
             for (int j = 0; j < imgY.cols(); j++) {
@@ -356,6 +357,21 @@ public class PencilDrawing {
                 updatePixelVal(i, j, data, imgEqualized);
             }
         }
+    }
+
+    void pencilTextureRendering() {
+        // Pencil Texture -> H(x); Texture Image (imgEqualized) -> J(x)
+        // Changing imgEqualized to CV_32F
+        imgEqualized.convertTo(imgEqualized, CvType.CV_32F);
+
+        // Variables
+        height = imgEqualized.height();
+        width = imgEqualized.width();
+        double lamda = 0.2;
+
+        // Get Pencil Texture
+        Mat imgPencilTexture = Imgcodecs.imread("pencils/pencil0.jpg", Imgcodecs.IMREAD_GRAYSCALE);
+        Imgproc.resize(imgPencilTexture, imgPencilTexture, imgEqualized.size(), 0, 0, Imgproc.INTER_CUBIC);
     }
 
     //*******************************************************************//
