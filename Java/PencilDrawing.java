@@ -41,13 +41,44 @@ public class PencilDrawing {
         PencilDrawing myDrawing = new PencilDrawing();
         myDrawing.lineDrawingWithStrokes("testImage-3.jpg");
         myDrawing.generatePencilTexture();
-        myDrawing.displayImage(myDrawing.imgEqualized);
+        myDrawing.generateGrayScaleImage();
+        myDrawing.generateColorImage();
+        myDrawing.displayImage(myDrawing.imgFinalColor);
+        myDrawing.displayImage(myDrawing.imgColor);
     }
-    
+    //*******************************************************************//
+    //********** Following are the final Image generating algo **********//
+    //*******************************************************************//
+    Mat imgFinalGrayScale;
+    Mat imgFinalColor;
+    double brightnessImgGrayScale = 1.1;
+    double imgLineDarkness = 1;
+    double brightnessImgTexturized = 1.0;
+
+    public void generateGrayScaleImage() {
+        imgFinalGrayScale = new Mat();
+        Core.multiply(imgLine, imgTexturized, imgFinalGrayScale);
+        Core.normalize(imgFinalGrayScale, imgFinalGrayScale, 0, 255, Core.NORM_MINMAX);
+        Core.pow(imgFinalGrayScale, brightnessImgGrayScale, imgFinalGrayScale);
+    }
+
+    public void generateColorImage() {
+        imgFinalColor = new Mat();
+        Imgproc.cvtColor(imgColor, imgFinalColor, Imgproc.COLOR_BGR2YUV);
+        for (int i = 0; i < imgFinalColor.rows(); i++) {
+            for (int j = 0; j < imgFinalColor.cols(); j++) {
+                double [] data;
+                data = getPixelValue(i, j, imgFinalColor);
+                data[0] = getPixelValue(i, j, imgFinalGrayScale)[0];
+                updatePixelVal(i, j, data, imgFinalColor);
+            }
+        }
+        Imgproc.cvtColor(imgFinalColor, imgFinalColor, Imgproc.COLOR_YUV2BGR);
+    }
+
     //*******************************************************************//
     //************* Following are the basic functionalities *************//
     //*******************************************************************//
-
     public void readImage(String inputPath) {
         log.log(Level.INFO, "Reading Image from Path " + inputPath);
         try {
@@ -101,7 +132,6 @@ public class PencilDrawing {
     Mat [] Li = new Mat[numDirections]; //degree->index: 0->0, 45->1, 90->2, 135->3, ~60->4, ~120->5
     Mat [] Ci = new Mat[numDirections]; //degree->index: 0->0, 45->1, 90->2, 135->3, ~60->4, ~120->5
     Mat imgLine;
-    double imgLineDarkness = 1.0;
 
     public void lineDrawingWithStrokes(String imgPath) {
         readImage(imgPath);
@@ -122,8 +152,20 @@ public class PencilDrawing {
         for (int i = 0; i < convLiCi.length; i++) {
             Core.add(imgLine, convLiCi[i], imgLine);
         }
+        for (int i = 0; i < imgLine.rows(); i++) {
+            for (int j = 0; j < imgLine.cols(); j++) {
+                double data[] = new double[1];
+                data = getPixelValue(i, j, imgLine);
+                if (data[0] > 200) {
+                    data[0] = Math.pow(data[0], imgLineDarkness);
+                } else {
+                    data[0] = data[0];
+                }
+                updatePixelVal(i, j, data, imgLine);
+            }
+        }
+        // Core.pow(imgLine, imgLineDarkness, imgLine);
         Core.normalize(imgLine, imgLine, 0, 255, Core.NORM_MINMAX);
-        Core.pow(imgLine, imgLineDarkness, imgLine);
 
         // Inverting the imgLine image
         for (int i = 0; i < imgLine.rows(); i++) {
@@ -247,20 +289,20 @@ public class PencilDrawing {
     double [] CDFParametric = new double[256];
     Mat imgY;
     Mat imgEqualized;
+    Mat imgTexturized;
 
-    void generatePencilTexture() {
+    public void generatePencilTexture() {
         // Step 1: Generate current image histogram
         getImageCDF();
         // Step 2: Equalize histogram to the predefined histogram
         getParametricCDF();
         doHistogramEqualization();
         // Step 3: Calculate beta matrix for pencil texture
-        pencilTextureRendering();
         // Step 4: Generate texture image
-
+        pencilTextureRendering();
     }
 
-    void getImageCDF() {
+    public void getImageCDF() {
         log.log(Level.INFO, "Getting Image CDF");
         
         imgY = new Mat();
@@ -295,7 +337,7 @@ public class PencilDrawing {
         }
     }
 
-    void getParametricCDF() {
+    public void getParametricCDF() {
         log.log(Level.INFO, "Generating Parameteric CDF to which we will equalize the image CDF");
         double [] w = {52, 37, 11}; // Wi for weights
         double sigmab = 9;
@@ -334,7 +376,7 @@ public class PencilDrawing {
         }
     }
 
-    void doHistogramEqualization() {
+    public void doHistogramEqualization() {
         log.log(Level.INFO, "Histogram Equalization");
         imgEqualized = new Mat(imgY.rows(), imgY.cols(), CvType.CV_8UC1);
         for (int i = 0; i < imgY.rows(); i++) {
@@ -359,7 +401,7 @@ public class PencilDrawing {
         }
     }
 
-    void pencilTextureRendering() {
+    public void pencilTextureRendering() {
         // Pencil Texture -> H(x); Texture Image (imgEqualized) -> J(x)
         // Changing imgEqualized to CV_32F
         imgEqualized.convertTo(imgEqualized, CvType.CV_32F);
@@ -372,6 +414,43 @@ public class PencilDrawing {
         // Get Pencil Texture
         Mat imgPencilTexture = Imgcodecs.imread("pencils/pencil0.jpg", Imgcodecs.IMREAD_GRAYSCALE);
         Imgproc.resize(imgPencilTexture, imgPencilTexture, imgEqualized.size(), 0, 0, Imgproc.INTER_CUBIC);
+        imgPencilTexture.convertTo(imgPencilTexture, CvType.CV_32F);
+
+        // In following part of code we will do following for getting beta & smoothing beta done
+        // beta(x) = ln(J(x)) / ln(H(x)) :J -> Tone Map; H -> Pencil Texture
+        // beta(x) = beta(x) + double-derivative(beta(x))
+        Mat pencilLog = new Mat();
+        Core.log(imgPencilTexture, pencilLog);
+        Mat textureLog = new Mat();
+        Core.log(imgEqualized, textureLog);
+        Mat beta = new Mat();
+        Core.divide(textureLog, pencilLog, beta);
+
+        // Generating +ve Laplacian matrix
+        Mat laplace = new Mat(3, 3, CvType.CV_32FC1, new Scalar(0));
+        double [] laplaceData = {1};
+        updatePixelVal(0, 1, laplaceData, laplace);
+        updatePixelVal(1, 0, laplaceData, laplace);
+        updatePixelVal(1, 2, laplaceData, laplace);
+        updatePixelVal(2, 1, laplaceData, laplace);
+        laplaceData[0] = -4;
+        updatePixelVal(1, 1, laplaceData, laplace);
+
+        Mat betaLaplace = new Mat();
+        Imgproc.filter2D(beta, betaLaplace, CvType.CV_32FC1, laplace);
+        Core.addWeighted(beta, 1, betaLaplace, lamda, 0, beta);
+        imgTexturized = new Mat(imgPencilTexture.rows(), imgPencilTexture.cols(), CvType.CV_32FC1, new Scalar(0));
+        for (int i = 0; i < imgTexturized.rows(); i++) {
+            for (int j = 0; j < imgTexturized.cols(); j++) {
+                double betaVal = getPixelValue(i, j, beta)[0];
+                double pencilVal = getPixelValue(i, j, imgPencilTexture)[0];
+                double [] data = new double[1];
+                data[0] = Math.pow(pencilVal, betaVal);
+                updatePixelVal(i, j, data, imgTexturized);
+            }
+        }
+        Core.pow(imgTexturized, brightnessImgTexturized, imgTexturized);
+        Core.normalize(imgTexturized, imgTexturized, 0, 255, Core.NORM_MINMAX);
     }
 
     //*******************************************************************//
