@@ -39,12 +39,20 @@ public class PencilDrawing {
 
     public static void main(String[] args) {
         PencilDrawing myDrawing = new PencilDrawing();
-        myDrawing.lineDrawingWithStrokes("testImage-3.jpg");
+        myDrawing.lineDrawingWithStrokes("Images/m--3.jpg");
         myDrawing.generatePencilTexture();
         myDrawing.generateGrayScaleImage();
         myDrawing.generateColorImage();
+
+        myDrawing.displayImage(myDrawing.imgFinalGrayScale);
+        myDrawing.outputImage("Results/temp-GrayPencil.jpg", myDrawing.imgFinalGrayScale);
+        myDrawing.displayImage(myDrawing.imgGray);
+        myDrawing.outputImage("Results/temp-GrayOriginal.jpg", myDrawing.imgGray);
+
         myDrawing.displayImage(myDrawing.imgFinalColor);
+        myDrawing.outputImage("Results/temp-ColorPencil.jpg", myDrawing.imgFinalColor);
         myDrawing.displayImage(myDrawing.imgColor);
+        myDrawing.outputImage("Results/temp-ColorOriginal.jpg", myDrawing.imgColor);
     }
     //*******************************************************************//
     //********** Following are the final Image generating algo **********//
@@ -137,7 +145,7 @@ public class PencilDrawing {
         readImage(imgPath);
         convertToGrayScale();
         gradientImage();
-        int customSize = 8;
+        int customSize = Math.max(imgColor.width(), imgColor.height())/30;;
         generateCi(customSize);
 
         // Generating Line Drawing with strokes image
@@ -192,8 +200,9 @@ public class PencilDrawing {
         try {
             Mat gray = new Mat();
             Imgproc.cvtColor(this.imgColor, gray, Imgproc.COLOR_BGR2GRAY);
-            Imgcodecs.imwrite("gray.jpg", gray);
-            this.imgGray = Imgcodecs.imread("gray.jpg", Imgcodecs.IMREAD_GRAYSCALE);
+            List<Mat> Gray = new ArrayList<Mat>();
+            Core.split(gray, Gray);
+            this.imgGray = Gray.get(0);
             this.imgGray.convertTo(this.imgGray, CvType.CV_32F);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Exception: " + e.getMessage());
