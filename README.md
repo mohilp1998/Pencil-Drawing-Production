@@ -25,7 +25,7 @@ You can refer to the research paper at this [Link](http://www.cse.cuhk.edu.hk/~l
 
 ### Build the Code
 
-https://code.visualstudio.com/docs/java/java-tutorial
+Link for Java Setting up: https://code.visualstudio.com/docs/java/java-tutorial
 
 **Debugging Message Configuration:**
 
