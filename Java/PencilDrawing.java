@@ -39,20 +39,20 @@ public class PencilDrawing {
 
     public static void main(String[] args) {
         PencilDrawing myDrawing = new PencilDrawing();
-        myDrawing.lineDrawingWithStrokes("Images/m--3.jpg");
+        myDrawing.lineDrawingWithStrokes("Images/3--17.jpg");
         myDrawing.generatePencilTexture();
         myDrawing.generateGrayScaleImage();
         myDrawing.generateColorImage();
 
         myDrawing.displayImage(myDrawing.imgFinalGrayScale);
-        myDrawing.outputImage("Results/temp-GrayPencil.jpg", myDrawing.imgFinalGrayScale);
+        myDrawing.outputImage("Results/GrayPencil.jpg", myDrawing.imgFinalGrayScale);
         myDrawing.displayImage(myDrawing.imgGray);
-        myDrawing.outputImage("Results/temp-GrayOriginal.jpg", myDrawing.imgGray);
+        myDrawing.outputImage("Results/GrayOriginal.jpg", myDrawing.imgGray);
 
         myDrawing.displayImage(myDrawing.imgFinalColor);
-        myDrawing.outputImage("Results/temp-ColorPencil.jpg", myDrawing.imgFinalColor);
+        myDrawing.outputImage("Results/ColorPencil.jpg", myDrawing.imgFinalColor);
         myDrawing.displayImage(myDrawing.imgColor);
-        myDrawing.outputImage("Results/temp-ColorOriginal.jpg", myDrawing.imgColor);
+        myDrawing.outputImage("Results/ColorOriginal.jpg", myDrawing.imgColor);
     }
     //*******************************************************************//
     //********** Following are the final Image generating algo **********//
@@ -348,7 +348,10 @@ public class PencilDrawing {
 
     public void getParametricCDF() {
         log.log(Level.INFO, "Generating Parameteric CDF to which we will equalize the image CDF");
-        double [] w = {52, 37, 11}; // Wi for weights
+        // double [] w = {52, 37, 11}; // Wi for more medium
+        double [] w = {42, 29, 29}; // Wi for dark
+        // double [] w = {76, 22, 2}; // Wi for illumination
+        // double [] w = {35, 37, 22}; // Custom Wi
         double sigmab = 9;
         double ua = 105;
         double ub = 225;
