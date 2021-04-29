@@ -21,14 +21,14 @@ You can refer to the research paper at this [Link](http://www.cse.cuhk.edu.hk/~l
 
 
 ## Building Code Yourself
+
 ### Prerequistes
 
 ### Build the Code
 
 Link for Java Setting up: https://code.visualstudio.com/docs/java/java-tutorial
 
-
-**Debugging Message Configuration:**
+### Debugging Message Configuration:
 
 
 ## Future Work
