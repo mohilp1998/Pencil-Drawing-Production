@@ -31,16 +31,24 @@ Following are some example results:
 ![Color Pencil Drawing](/Java/readme-images/ColorPencilImage-4.PNG "Color Pencil Drawing")
 
 ## Building Code Yourself
+This section is to help anyone who wishes to tinker with these project or use the code for further development. Here you will find details on how to configure and use the code.
 
 ### Prerequistes
+1. Install Java Development Kit (JDK): https://www.oracle.com/in/java/technologies/javase-downloads.html
+2. Install vscode: https://code.visualstudio.com/ (Feel free to use any code editor/IDE you prefer, I have used vscode and have launch.json & setting.json configure for it)
 
 ### Build the Code
+1. If you are using vscode please go through this tutorial for setting up Java in vscode and running basic code: https://code.visualstudio.com/docs/java/java-tutorial
+2. Add the PencilDrawing.java to you run environment in vscode
+3. If you are not using vscode please add the file references opencv_java343.dll & opencv-343.jar in you IDE at appropriate positions
+4. In the main function change the input image path and run the code
+5. Additionally in the PencilDrawing class constructor you can the log level according to your need. Currently the code only uses two log levels either SEVERE or INFO
 
-Link for Java Setting up: https://code.visualstudio.com/docs/java/java-tutorial
+## Future Improvements
+1. Improving Pencil Texture Rendering Method: Currently the pencil texture generation method used in the code is not same as the research paper, but is a crude approximate method. The research paper requires solving a linear equation using conjugate gradient method to tranfer pencil texture. As Java does not have a easy library available for these methods, and implementing these methods by myself will take significant time. This work is deemed as a future improvements.
+2. Android Application: Building an Android application to generate Pencil Drawing from natural images.
 
-### Debugging Message Configuration:
-
-
-## Future Work
-1. Improving Pencil Texture Method
-2. Android Code
+## Acknowledgements:
+* [Original Paper](http://www.cse.cuhk.edu.hk/~leojia/projects/pencilsketch/pencil_drawing.htm)
+* [Open CV Documentation](https://docs.opencv.org/3.4/index.html)
+* [candaycat1992 Matlab Implementation](https://github.com/candycat1992/PencilDrawing): This is a good reference for understand proper pencil texture rendering method (as suggested in future improvements)
