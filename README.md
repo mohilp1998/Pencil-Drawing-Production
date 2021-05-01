@@ -25,8 +25,10 @@ Lastly to generate the color pencil image drawing we use the gray scale pencil d
 ![Color Pencil Drawing](/Java/readme-images/ColorPencilImage.PNG "Color Pencil Drawing")
 
 ## Results
-
-
+Following are some example results:
+![Color Pencil Drawing](/Java/readme-images/ColorPencilImage-2.PNG "Color Pencil Drawing")
+![Color Pencil Drawing](/Java/readme-images/ColorPencilImage-3.PNG "Color Pencil Drawing")
+![Color Pencil Drawing](/Java/readme-images/ColorPencilImage-4.PNG "Color Pencil Drawing")
 
 ## Building Code Yourself
 
